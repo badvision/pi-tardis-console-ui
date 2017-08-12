@@ -1,3 +1,17 @@
-.button {
-    -fx-font-weight: bold;
+.background {
+    -fx-background-color: black;
+}
+
+.outer-shape {
+    -fx-stroke: #aaccff;
+    -fx-stroke-type: inside;
+    -fx-stroke-width: 2px;
+    -fx-fill: #4466ff;
+}
+
+.inner-shape {
+    -fx-stroke: #aaccff;
+    -fx-stroke-type: inside;
+    -fx-stroke-width: 2px;
+    -fx-fill: #000040;
 }
