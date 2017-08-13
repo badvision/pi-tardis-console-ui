@@ -5,13 +5,27 @@
 .outer-shape {
     -fx-stroke: #aaccff;
     -fx-stroke-type: inside;
-    -fx-stroke-width: 2px;
+    -fx-stroke-width: 3px;
     -fx-fill: #4466ff;
 }
 
 .inner-shape {
     -fx-stroke: #aaccff;
     -fx-stroke-type: inside;
-    -fx-stroke-width: 2px;
+    -fx-stroke-width: 3px;
     -fx-fill: #000040;
+}
+
+.basic-shape {
+    -fx-stroke: #aaccff;
+    -fx-stroke-type: inside;
+    -fx-stroke-width: 2px;
+    -fx-fill: none;
+}
+
+.basic-shape-solid {
+    -fx-stroke: #aaccff;
+    -fx-stroke-type: inside;
+    -fx-stroke-width: 2px;
+    -fx-fill: black;
 }

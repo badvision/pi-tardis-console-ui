@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import java.lang.Double?>
-<?import javafx.geometry.Point3D?>
+<?import javafx.scene.Group?>
 <?import javafx.scene.effect.Bloom?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.shape.Circle?>
@@ -9,39 +9,31 @@
 
 <AnchorPane id="AnchorPane" fx:id="pane" prefHeight="480" prefWidth="800" styleClass="background" stylesheets="@../styles/Styles.css" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.badvision.tardispi.FXMLController">
     <children>
-        <Circle layoutX="599.0" layoutY="240.0" radius="150.0" styleClass="outer-shape">
-            <effect>
-                <Bloom threshold="0.59" />
-            </effect>
-        </Circle>
-        <Polygon layoutX="599.0" layoutY="240.0" styleClass="inner-shape">
-            <!-- 86.6 = 50 * sqrt(3) -->
-            <!-- From wolfram alpha: https://www.wolframalpha.com/input/?i=regular+hexagon+with+sides+100+length
-{50, -50 Sqrt[3]}, {100, 0}, {50, 50 Sqrt[3]}, {-50, 50 Sqrt[3]}, {-100, 0}, {-50, -50 Sqrt[3]}}
-75, 130
-            -->
-            <points>
-                <Double fx:value="-75.0" />
-                <Double fx:value="-130.0" />
-                <Double fx:value="75.0" />
-                <Double fx:value="-130.0" />
-                <Double fx:value="150.0" />
-                <Double fx:value="0.0" />
-                <Double fx:value="75" />
-                <Double fx:value="130" />
-                <Double fx:value="-75" />
-                <Double fx:value="130" />
-                <Double fx:value="-150" />
-                <Double fx:value="0" />
-                <Double fx:value="-75" />
-                <Double fx:value="-130" />
-            </points>
-            <effect>
-                <Bloom threshold="0.36" />
-            </effect>
-         <rotationAxis>
-            <Point3D />
-         </rotationAxis>
-        </Polygon>
+      <Group layoutX="590.0" layoutY="240.0">
+         <children>
+              <Circle radius="150.0" styleClass="outer-shape" />
+              <Polygon styleClass="inner-shape">
+                  <points>
+                      <Double fx:value="-75.0" />
+                      <Double fx:value="-130.0" />
+                      <Double fx:value="75.0" />
+                      <Double fx:value="-130.0" />
+                      <Double fx:value="150.0" />
+                      <Double fx:value="0.0" />
+                      <Double fx:value="75" />
+                      <Double fx:value="130" />
+                      <Double fx:value="-75" />
+                      <Double fx:value="130" />
+                      <Double fx:value="-150" />
+                      <Double fx:value="0" />
+                      <Double fx:value="-75" />
+                      <Double fx:value="-130" />
+                  </points>
+              </Polygon>
+         </children>
+         <effect>
+            <Bloom threshold="0.47" />
+         </effect>
+      </Group>
     </children>
 </AnchorPane>
