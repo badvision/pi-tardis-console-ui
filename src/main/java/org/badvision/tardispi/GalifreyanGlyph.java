@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Arc;
+import javafx.scene.shape.ArcType;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.StrokeLineCap;
@@ -14,18 +16,18 @@ import javafx.scene.shape.StrokeLineCap;
 /**
  * Generate a circular glyph
  */
-public class GalifreyanGlyph extends Group {
+public class GalifreyanGlyph extends ShapeGroup {
 
     public static class LineSegment {
 
-        double x, y, arcBegin, arcEnd, lineRad;
+        double x, y, arcBegin, arcEnd, radius;
 
         public LineSegment(double x, double y, double arcBegin, double arcEnd, double lineRad) {
             this.x = x;
             this.y = y;
             this.arcBegin = arcBegin;
             this.arcEnd = arcEnd;
-            this.lineRad = lineRad;
+            this.radius = lineRad;
         }
     }
 
@@ -34,19 +36,13 @@ public class GalifreyanGlyph extends Group {
     Paint foregroundColor;
     Paint backgroundColor;
     double TWO_PI = 2 * PI;
-
+    SentenceType sentenceType;
     public GalifreyanGlyph(String message, int radius, Paint foreground, Paint background) throws Exception {
         super();
         overallRadius = radius;
         foregroundColor = foreground;
         backgroundColor = background;
-//        Circle base = new Circle();
-//        base.setRadius(radius);
-//        base.getStyleClass().add("basic-shape");
-//        getChildren().add(base);
-//        Circle clip = new Circle();
-//        clip.setRadius(radius);
-//        setClip(clip);
+        sentenceType = determineSentenceType(message);        
         writeSentence(message);
     }
 
@@ -73,59 +69,6 @@ public class GalifreyanGlyph extends Group {
         }
     }
 
-    Paint strokeColor = Color.BLACK;
-    Paint fillColor = Color.color(0, 0, 0, 0);
-    Double strokeWeight = 1.0;
-    StrokeLineCap strokeCap = StrokeLineCap.SQUARE;
-
-    private void stroke(Paint paint) {
-        strokeColor = paint;
-    }
-
-    private void strokeWeight(double w) {
-        strokeWeight = w;
-    }
-
-    private void strokeCap(StrokeLineCap strokeLineCap) {
-        strokeCap = strokeLineCap;
-    }
-
-    private void fill(Paint paint) {
-        fillColor = paint;
-    }
-
-    private void noStroke() {
-        strokeColor = Color.rgb(0, 0, 0, 0);
-    }
-
-    private void noFill() {
-        fillColor = Color.rgb(0, 0, 0, 0);
-    }
-
-    private void line(double x1, double y1, double x2, double y2) {
-        Line line = new Line(x1, y1, x2, y2);
-        line.setStroke(strokeColor);
-        line.setStrokeWidth(strokeWeight);
-        line.setStrokeLineCap(strokeCap);
-        getChildren().add(line);
-    }
-
-    private void arc(double x, double y, double width, double height, double start, double stop) {
-        Arc arc = new Arc(x, y, width, height, start, stop - start);
-        arc.setStroke(strokeColor);
-        arc.setStrokeWidth(strokeWeight);
-        arc.setStrokeLineCap(strokeCap);
-        getChildren().add(arc);
-    }
-
-    private void ellipse(double x, double y, double width, double height) {
-        Ellipse ellipse = new Ellipse(x, y, width, height);
-        ellipse.setStroke(strokeColor);
-        ellipse.setStrokeWidth(strokeWeight);
-        ellipse.setFill(fillColor);
-        getChildren().add(ellipse);
-    }
-
     public static enum SentenceType {
         single_word, full_sentence
     };
@@ -133,14 +76,12 @@ public class GalifreyanGlyph extends Group {
     public void appendLastString(List<String> s, String v) {
         s.set(s.size() - 1, s.get(s.size() - 1) + v);
     }
+    
+    List<Double> wordRadius = new ArrayList<>();
+    List<LineSegment> lineSegments = new ArrayList<>();
+    double charCount = 0;
 
     public void writeSentence(String message) throws Exception {
-        SentenceType type = determineSentenceType(message);
-        List<Double> wordRadius = new ArrayList<>();
-        List<LineSegment> lineSegments = new ArrayList<>();
-        double1 = 0;
-        double2 = 0;
-        double charCount = 0;
         String[] words = performSymbolicSubstitutions(message).trim().split("\\s");
         List<List<String>> sentence = new ArrayList<>();
         char[] punctuation = new char[words.length];
@@ -181,21 +122,21 @@ public class GalifreyanGlyph extends Group {
             charCount += wordParts.size();
         }
         stroke(foregroundColor);
-        if (type == SentenceType.single_word) {
+        if (sentenceType != SentenceType.single_word) {
             strokeWeight(3);
             ellipse(0, 0, overallRadius, overallRadius);
         }
         strokeWeight(4);
-        ellipse(0, 0, overallRadius + 20, overallRadius + 20);
+        ellipse(0, 0, overallRadius + 40, overallRadius + 40);
         double pos = PI / 2;
         double maxRadius = 0;
         for (int i = 0; i < sentence.size(); i++) {
-            double boundedValue = min(max(overallRadius * sentence.get(i).size() / charCount * 1.2f, 0), overallRadius / 2);
+            double boundedValue = min(max(overallRadius * sentence.get(i).size() / charCount * 1.2, 0.0), overallRadius / 2.0);
             wordRadius.add(boundedValue);
             maxRadius = max(boundedValue, maxRadius);
         }
-        double scaleFactor = overallRadius / (maxRadius + (overallRadius / 2));
-        double distance = scaleFactor * overallRadius / 2;
+        double scaleFactor = overallRadius / (maxRadius + (overallRadius / 2.0));
+        double distance = scaleFactor * overallRadius / 2.0;
         for (int i = 0; i < wordRadius.size(); i++) {
             wordRadius.set(i, wordRadius.get(i) * scaleFactor);
         }
@@ -205,10 +146,7 @@ public class GalifreyanGlyph extends Group {
         for (int i = 0; i < sentence.size(); i++) {
             x[i] = distance * cos(pos);
             y[i] = distance * sin(pos);
-            int nextIndex = 0;
-            if (i != sentence.size() - 1) {
-                nextIndex = i + 1;
-            }
+            int nextIndex = (i + 1) % sentence.size();
             int currentWordSize = sentence.get(i).size();
             int nextWordSize = sentence.get(nextIndex).size();
 
@@ -220,18 +158,18 @@ public class GalifreyanGlyph extends Group {
                     ellipse(pX, pY, 20, 20);
                     break;
                 case '?':
-                    makeDots(0, 0, overallRadius * 1.4f, 2, -1.2f, 0.1f);
+                    makeDots(0, 0, overallRadius * 1.4, 2, -1.2, 0.1);
                     break;
                 case '!':
-                    makeDots(0, 0, overallRadius * 1.4f, 3, -1.2f, 0.1f);
+                    makeDots(0, 0, overallRadius * 1.4, 3, -1.2, 0.1);
                     break;
                 case '"':
-                    line(cos(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * overallRadius, sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * overallRadius, cos(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20));
+                    line(cos(pos + currentWordSize + nextWordSize / (2.0 * charCount) * PI) * overallRadius, sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * overallRadius, cos(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20.0));
                     break;
                 case '-':
-                    line(cos(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * overallRadius, sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * overallRadius, cos(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20));
-                    line(cos(pos + (currentWordSize + nextWordSize + 0.3f) / (2 * charCount) * PI) * overallRadius, sin(pos + (currentWordSize + nextWordSize + 0.2f) / (2 * charCount) * PI) * overallRadius, cos(pos + (currentWordSize + nextWordSize + 0.2f) / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + (currentWordSize + nextWordSize + 0.3f) / (2 * charCount) * PI) * (overallRadius + 20));
-                    line(cos(pos + (currentWordSize + nextWordSize - 0.3f) / (2 * charCount) * PI) * overallRadius, sin(pos + (currentWordSize + nextWordSize - 0.2f) / (2 * charCount) * PI) * overallRadius, cos(pos + (currentWordSize + nextWordSize - 0.2f) / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + (currentWordSize + nextWordSize - 0.3f) / (2 * charCount) * PI) * (overallRadius + 20));
+                    line(cos(pos + currentWordSize + nextWordSize / (2.0 * charCount) * PI) * overallRadius, sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * overallRadius, cos(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + currentWordSize + nextWordSize / (2 * charCount) * PI) * (overallRadius + 20.0));
+                    line(cos(pos + (currentWordSize + nextWordSize + 0.3f) / (2 * charCount) * PI) * overallRadius, sin(pos + (currentWordSize + nextWordSize + 0.2f) / (2 * charCount) * PI) * overallRadius, cos(pos + (currentWordSize + nextWordSize + 0.2f) / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + (currentWordSize + nextWordSize + 0.3) / (2 * charCount) * PI) * (overallRadius + 20));
+                    line(cos(pos + (currentWordSize + nextWordSize - 0.3f) / (2 * charCount) * PI) * overallRadius, sin(pos + (currentWordSize + nextWordSize - 0.2f) / (2 * charCount) * PI) * overallRadius, cos(pos + (currentWordSize + nextWordSize - 0.2f) / (2 * charCount) * PI) * (overallRadius + 20), sin(pos + (currentWordSize + nextWordSize - 0.3) / (2 * charCount) * PI) * (overallRadius + 20));
                     break;
                 case ',':
                     fill(foregroundColor);
@@ -282,7 +220,7 @@ public class GalifreyanGlyph extends Group {
             angle1 = TWO_PI - angle1;
             int index = (int) round(map(angle1, 0, TWO_PI, 0, currentWordSize)) % currentWordSize;
             char tempChar = sentence.get(i).get(index).charAt(0);
-            if (isInThirdSet(tempChar) && type != SentenceType.single_word) {
+            if (isInThirdSet(tempChar) && sentenceType != SentenceType.single_word) {
                 nested[i][index] = true;
                 wordRadius.set(i, min(max(wordRadius.get(i) * 1.2, 0), maxRadius * scaleFactor));
                 while (hypot(x[i] - x[otherIndex], y[i] - y[otherIndex]) > wordRadius.get(i) + wordRadius.get(otherIndex)) {
@@ -292,7 +230,7 @@ public class GalifreyanGlyph extends Group {
             }
         }
         strokeWeight(2);
-        if (type == SentenceType.single_word) {
+        if (sentenceType == SentenceType.single_word) {
             wordRadius.set(0, overallRadius * 0.9);
             x[0] = 0;
             y[0] = 0;
@@ -301,10 +239,10 @@ public class GalifreyanGlyph extends Group {
             List<String> currentWord = sentence.get(i);
             int currentWordSize = currentWord.size();
             pos = PI / 2;
-            double letterRadius = wordRadius.get(i) / (currentWordSize + 1) * 1.5f;
+            double letterRadius = (double) wordRadius.get(i) / (currentWordSize + 1.0) * 1.5;
             for (int j = 0; j < currentWordSize; j++) {
                 if (apostrophes[i][j]) {
-                    double a = pos + PI / currentWordSize - 0.1f;
+                    double a = pos + PI / currentWordSize - 0.1;
                     double d = 0;
                     double tempX = x[i];
                     double tempY = y[i];
@@ -400,12 +338,12 @@ public class GalifreyanGlyph extends Group {
                                 lines = 2;
                         }
                         for (int k = 0; k < lines; k++) {
-                            lineSegments.add(new LineSegment(tempX, tempY, pos + 0.5f, pos + TWO_PI - 0.5, letterRadius * 2));
+                            lineSegments.add(new LineSegment(tempX, tempY, pos + 0.5, pos + TWO_PI - 0.5, letterRadius * 2));
                         }
                         if (currentPart.length() > 1) {
                             int vowelIndex = 1;
                             if (currentPart.charAt(1) == '@') {
-                                makeArcs(tempX, tempY, x[i], y[i], wordRadius.get(i), letterRadius * 1.3f, pos + TWO_PI, pos - TWO_PI);
+                                makeArcs(tempX, tempY, x[i], y[i], wordRadius.get(i), letterRadius * 1.3, pos + TWO_PI, pos - TWO_PI);
                                 vowelIndex = 2;
                             }
                             if (currentPart.length() == vowelIndex) {
@@ -439,7 +377,7 @@ public class GalifreyanGlyph extends Group {
                             }
                             if (currentPart.length() == (vowelIndex + 2)) {
                                 if (currentPart.charAt(vowelIndex + 1) == '@') {
-                                    ellipse(tempX, tempY, letterRadius * 1.3f, letterRadius * 1.3f);
+                                    ellipse(tempX, tempY, letterRadius * 1.3, letterRadius * 1.3);
                                 }
                             }
                         }
@@ -447,7 +385,7 @@ public class GalifreyanGlyph extends Group {
                     if (isInSecondSet(firstLetter)) {
                         tempX = x[i] + cos(pos) * (wordRadius.get(i) - letterRadius);
                         tempY = y[i] + sin(pos) * (wordRadius.get(i) - letterRadius);
-                        ellipse(tempX, tempY, letterRadius * 1.9f, letterRadius * 1.9f);
+                        ellipse(tempX, tempY, letterRadius * 1.9, letterRadius * 1.9);
                         arc(x[i], y[i], wordRadius.get(i) * 2, wordRadius.get(i) * 2, pos - PI / currentWordSize, pos + PI / currentWordSize);
                         int lines = 0;
                         switch (currentPart.charAt(0)) {
@@ -475,7 +413,7 @@ public class GalifreyanGlyph extends Group {
                         if (currentPart.length() > 1) {
                             int vowelIndex = 1;
                             if (currentPart.charAt(1) == '@') {
-                                ellipse(tempX, tempY, letterRadius * 2.3f, letterRadius * 2.3f);
+                                ellipse(tempX, tempY, letterRadius * 2.3, letterRadius * 2.3);
                                 vowelIndex = 2;
                             }
                             if (currentPart.length() == vowelIndex) {
@@ -509,7 +447,7 @@ public class GalifreyanGlyph extends Group {
                             }
                             if (currentPart.length() == (vowelIndex + 2)) {
                                 if (currentPart.charAt(vowelIndex + 1) == '@') {
-                                    ellipse(tempX, tempY, letterRadius * 1.3f, letterRadius * 1.3f);
+                                    ellipse(tempX, tempY, letterRadius * 1.3, letterRadius * 1.3);
                                 }
                             }
                         }
@@ -578,9 +516,9 @@ public class GalifreyanGlyph extends Group {
                         if (currentPart.length() > 1) {
                             if (currentPart.charAt(1) == '@') {
                                 if (nested[i][j]) {
-                                    makeArcs(x[nextIndex], y[nextIndex], x[i], y[i], wordRadius.get(i), (wordRadius.get(nextIndex) + 20) * 1.2f, pos + TWO_PI, pos - TWO_PI);
+                                    makeArcs(x[nextIndex], y[nextIndex], x[i], y[i], wordRadius.get(i), (wordRadius.get(nextIndex) + 20) * 1.2, pos + TWO_PI, pos - TWO_PI);
                                 } else {
-                                    makeArcs(tempX, tempY, x[i], y[i], wordRadius.get(i), letterRadius * 1.8f, pos + TWO_PI, pos - TWO_PI);
+                                    makeArcs(tempX, tempY, x[i], y[i], wordRadius.get(i), letterRadius * 1.8, pos + TWO_PI, pos - TWO_PI);
                                 }
                             }
                         }
@@ -616,7 +554,7 @@ public class GalifreyanGlyph extends Group {
                         if (currentPart.length() > 1) {
                             int vowelIndex = 1;
                             if (currentPart.charAt(1) == '@') {
-                                ellipse(tempX, tempY, letterRadius * 2.3f, letterRadius * 2.3f);
+                                ellipse(tempX, tempY, letterRadius * 2.3, letterRadius * 2.3);
                                 vowelIndex = 2;
                             }
                             if (currentPart.length() == vowelIndex) {
@@ -650,7 +588,7 @@ public class GalifreyanGlyph extends Group {
                             }
                             if (currentPart.length() == (vowelIndex + 2)) {
                                 if (currentPart.charAt(vowelIndex + 1) == '@') {
-                                    ellipse(tempX, tempY, letterRadius * 1.8f, letterRadius * 1.8f);
+                                    ellipse(tempX, tempY, letterRadius * 1.8, letterRadius * 1.8);
                                 }
                             }
                         }
@@ -685,10 +623,7 @@ public class GalifreyanGlyph extends Group {
                 if (hypot(lineI.x + (cos(angle1) * 20) - lineJ.x, lineI.y + (sin(angle1) * 20) - lineJ.y) > hypot(lineI.x - lineJ.y, lineI.y - lineJ.y)) {
                     angle1 -= PI;
                 }
-                if (angle1 < 0) {
-                    angle1 += TWO_PI;
-                }
-                if (angle1 < 0) {
+                while (angle1 < 0) {
                     angle1 += TWO_PI;
                 }
                 if (angle1 < lineI.arcEnd && angle1 > lineI.arcBegin) {
@@ -702,7 +637,7 @@ public class GalifreyanGlyph extends Group {
                     }
                 }
             }
-            if (indexes.size() == 0) {
+            if (indexes.isEmpty()) {
                 double a = lerp(lineI.arcBegin, lineI.arcEnd, random());
                 double d = 0;
                 double tempX = lineI.x + cos(a) * d;
@@ -712,20 +647,17 @@ public class GalifreyanGlyph extends Group {
                     tempY = lineI.y + sin(a) * d;
                     d += 1;
                 }
-                line(lineI.x + cos(a) * lineI.lineRad / 2, lineI.y + sin(a) * lineI.lineRad / 2, tempX, tempY);
+                line(lineI.x + cos(a) * lineI.radius / 2, lineI.y + sin(a) * lineI.radius / 2, tempX, tempY);
             } else {
                 int r = (int) floor(random() * indexes.size());
                 int j = indexes.get(r);
                 LineSegment lineJ = lineSegments.get(j);
                 double a = angles.get(r) + PI;
-                line(lineI.x + cos(a) * lineI.lineRad / 2, lineI.y + sin(a) * lineI.lineRad / 2, lineJ.x + cos(a + PI) * lineJ.lineRad / 2, lineJ.y + sin(a + PI) * lineJ.lineRad / 2);
+                line(lineI.x + cos(a) * lineI.radius / 2.0, lineI.y + sin(a) * lineI.radius / 2, lineJ.x + cos(a + PI) * lineJ.radius / 2.0, lineJ.y + sin(a + PI) * lineJ.radius / 2.0);
                 lineLengths.add(hypot(lineI.x - lineJ.x, lineI.y - lineJ.y + lineI.x + lineI.y + lineJ.x + lineJ.y));
-                List<LineSegment> keepLineSegments = new ArrayList<>();
-                for (int k = 0; k < lineSegments.size(); k++) {
-                    if (k != j && k != i) {
-                        keepLineSegments.add(lineSegments.get(k));
-                    }
-                }
+                List<LineSegment> keepLineSegments = new ArrayList<>(lineSegments);
+                keepLineSegments.remove(lineSegments.get(i));
+                keepLineSegments.remove(lineSegments.get(j));
                 lineSegments.retainAll(keepLineSegments);
                 i -= 1;
             }
@@ -736,10 +668,10 @@ public class GalifreyanGlyph extends Group {
         noStroke();
         fill(foregroundColor);
         if (amnt == 3) {
-            ellipse(mX + cos(pos + PI) * r / 1.4f, mY + sin(pos + PI) * r / 1.4f, r / 3 * scaleFactor, r / 3 * scaleFactor);
+            ellipse(mX + cos(pos + PI) * r / 1.4, mY + sin(pos + PI) * r / 1.4, r / 3.0 * scaleFactor, r / 3.0 * scaleFactor);
         }
-        ellipse(mX + cos(pos + PI + scaleFactor) * r / 1.4f, mY + sin(pos + PI + scaleFactor) * r / 1.4f, r / 3 * scaleFactor, r / 3 * scaleFactor);
-        ellipse(mX + cos(pos + PI - scaleFactor) * r / 1.4f, mY + sin(pos + PI - scaleFactor) * r / 1.4f, r / 3 * scaleFactor, r / 3 * scaleFactor);
+        ellipse(mX + cos(pos + PI + scaleFactor) * r / 1.4f, mY + sin(pos + PI + scaleFactor) * r / 1.4, r / 3 * scaleFactor, r / 3.0 * scaleFactor);
+        ellipse(mX + cos(pos + PI - scaleFactor) * r / 1.4f, mY + sin(pos + PI - scaleFactor) * r / 1.4, r / 3 * scaleFactor, r / 3.0 * scaleFactor);
         noFill();
         stroke(foregroundColor);
     }
@@ -756,11 +688,11 @@ public class GalifreyanGlyph extends Group {
             omega = atan((mY - nY) / (mX - nX));
         } else if (nX - mX > 0) {
             omega = PI + atan((mY - nY) / (mX - nX));
-        } else if (nX - mX == 0) {
+        } else if (nX == mX) {
             if (nY > mY) {
-                omega = 3 * PI / 2;
+                omega = 3.0 * PI / 2.0;
             } else {
-                omega = PI / 2;
+                omega = PI / 2.0;
             }
         }
         if (omega + theta - end > 0) {
@@ -774,37 +706,26 @@ public class GalifreyanGlyph extends Group {
             strokeCap(StrokeLineCap.SQUARE);
             stroke(backgroundColor);
             strokeWeight(4);
-            // arc(nX, nY, r1*2, r1*2, omega-theta,omega+theta);
+            arc(nX, nY, r1 * 2.0, r1 * 2.0, omega - theta, omega + theta);
             strokeWeight(2);
             stroke(foregroundColor);
             strokeCap(StrokeLineCap.ROUND);
         }
-        theta = PI - acos((pow(r2, 2) - pow(r1, 2) + pow(d, 2)) / (2 * d * r2));
+        theta = PI - acos((pow(r2, 2) - pow(r1, 2) + pow(d, 2)) / (2.0 * d * r2));
         if (nX - mX < 0) {
             omega = atan((mY - nY) / (mX - nX));
         } else if (nX - mX > 0) {
             omega = PI + atan((mY - nY) / (mX - nX));
-        } else if (nX - mX == 0) {
+        } else if (nX == mX) {
             if (nY > mY) {
-                omega = 3 * PI / 2;
+                omega = 3.0 * PI / 2.0;
             } else {
-                omega = PI / 2;
+                omega = PI / 2.0;
             }
         }
-        arc(mX, mY, r2 * 2, r2 * 2, omega + theta, omega - theta + TWO_PI);
+        arc(mX, mY, r2 * 2.0, r2 * 2.0, omega + theta, omega - theta + TWO_PI);
         double1 = omega + theta;
         double2 = omega - theta + TWO_PI;
-    }
-
-    private double map(double value, double rangeStart, double rangeEnd, double targetRangeStart, double targetRangeEnd) {
-        double range1 = rangeEnd - rangeStart;
-        double range2 = targetRangeEnd - targetRangeStart;
-        double valueInRange = (value - rangeStart) / range1;
-        return targetRangeStart + (valueInRange * range2);
-    }
-
-    private double lerp(double start, double stop, double amt) {
-        return start + ((stop - start) * amt);
     }
 
     private boolean isInFirstSet(char ch) {
